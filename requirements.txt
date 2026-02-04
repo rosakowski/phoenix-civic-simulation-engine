@@ -2,8 +2,8 @@ fastapi==0.109.0
 uvicorn==0.27.0
 pydantic==2.5.3
 sqlalchemy==2.0.25
-psycopg2-binary==2.9.9
-geoalchemy2==0.14.3
+# psycopg2-binary==2.9.9  # Optional: only needed with PostgreSQL (brew install postgresql first)
+# geoalchemy2==0.14.3     # Optional: only needed with PostgreSQL
 geopandas==0.14.2
 shapely==2.0.2
 numpy==1.26.3
