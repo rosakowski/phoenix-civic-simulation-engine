@@ -89,3 +89,8 @@ Yes! Connecting Claude Code to GitHub would be fantastic. It could:
 
 This would be a great example of human-AI-AI collaboration! Let me know what you'd like to set up.# Add this to your .bashrc or .zshrc
 export PATH="/usr/local/bin:$PATH"
+## Immediate Fix for Python Issue
+
+If you're seeing 'command not found: python' right now, try:
+
+
