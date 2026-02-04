@@ -8,90 +8,110 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             color: #eaeaea;
             min-height: 100vh;
         }
-        
+
         .header {
             background: rgba(0, 0, 0, 0.3);
-            padding: 1.5rem 2rem;
+            padding: 1rem 2rem;
             border-bottom: 1px solid rgba(255, 107, 107, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
-        
+
         .header h1 {
-            font-size: 2rem;
+            font-size: 1.6rem;
             background: linear-gradient(45deg, #ff6b6b, #ffd93d);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 0.5rem;
         }
-        
-        .header p {
+
+        .header p { opacity: 0.8; font-size: 0.85rem; }
+
+        .header-date {
+            text-align: right;
+            font-size: 0.85rem;
             opacity: 0.8;
-            font-size: 0.95rem;
         }
-        
+
         .container {
             display: grid;
-            grid-template-columns: 350px 1fr;
-            gap: 1.5rem;
-            padding: 1.5rem;
-            max-width: 1800px;
+            grid-template-columns: 380px 1fr;
+            gap: 1rem;
+            padding: 1rem;
+            max-width: 1900px;
             margin: 0 auto;
         }
-        
+
         .sidebar {
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
+            gap: 1rem;
+            max-height: calc(100vh - 80px);
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.2) transparent;
         }
-        
+
         .panel {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 12px;
-            padding: 1.5rem;
+            padding: 1.25rem;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        
+
         .panel h3 {
             color: #ffd93d;
-            margin-bottom: 1rem;
-            font-size: 1.1rem;
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
-        
+
+        .stat-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+
         .stat-card {
             background: rgba(255, 107, 107, 0.1);
             border-left: 3px solid #ff6b6b;
-            padding: 1rem;
-            margin-bottom: 0.75rem;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
             border-radius: 0 8px 8px 0;
         }
-        
+
+        .stat-card.green { border-left-color: #51b749; background: rgba(81,183,73,0.1); }
+        .stat-card.blue { border-left-color: #5484ed; background: rgba(84,132,237,0.1); }
+        .stat-card.yellow { border-left-color: #ffd93d; background: rgba(255,217,61,0.1); }
+
         .stat-value {
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             font-weight: bold;
             color: #ff6b6b;
         }
-        
-        .stat-label {
-            font-size: 0.85rem;
-            opacity: 0.8;
-            margin-top: 0.25rem;
-        }
-        
+
+        .stat-card.green .stat-value { color: #51b749; }
+        .stat-card.blue .stat-value { color: #5484ed; }
+        .stat-card.yellow .stat-value { color: #ffd93d; }
+
+        .stat-label { font-size: 0.78rem; opacity: 0.8; margin-top: 0.15rem; }
+
+        /* Intervention buttons */
+        .intervention-group { margin-bottom: 0.75rem; }
+
         .intervention-btn {
             width: 100%;
-            padding: 0.875rem;
-            margin-bottom: 0.5rem;
+            padding: 0.75rem;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
             border-radius: 8px;
@@ -99,327 +119,1149 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
+            text-align: left;
+            font-size: 0.9rem;
         }
-        
+
         .intervention-btn:hover {
-            transform: translateY(-2px);
+            transform: translateY(-1px);
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
         }
-        
+
         .intervention-btn.active {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         }
-        
+
+        .intervention-detail {
+            display: none;
+            background: rgba(0,0,0,0.2);
+            border-radius: 0 0 8px 8px;
+            padding: 0.75rem;
+            margin-top: -4px;
+            font-size: 0.8rem;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-top: none;
+        }
+
+        .intervention-detail.show { display: block; }
+
+        .detail-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .detail-table td {
+            padding: 0.25rem 0.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .detail-table td:first-child { opacity: 0.7; }
+        .detail-table td:last-child { text-align: right; font-weight: 500; }
+
+        .sub-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.5rem;
+            margin-top: 0.35rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.78rem;
+            transition: background 0.2s;
+        }
+
+        .sub-option:hover { background: rgba(255,255,255,0.1); }
+
+        .sub-option.selected {
+            background: rgba(102, 126, 234, 0.3);
+            border: 1px solid rgba(102, 126, 234, 0.5);
+        }
+
+        .sub-option input[type="radio"] { accent-color: #667eea; }
+
+        .sub-label { flex: 1; }
+        .sub-cost { color: #ffd93d; font-weight: 600; }
+
+        /* Main content */
         .main-content {
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
+            gap: 1rem;
         }
-        
+
         #map {
             height: 500px;
             border-radius: 12px;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        
+
+        .map-toolbar {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .map-tool-btn {
+            padding: 0.4rem 0.8rem;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 6px;
+            color: #eaeaea;
+            cursor: pointer;
+            font-size: 0.78rem;
+            transition: all 0.2s;
+        }
+
+        .map-tool-btn:hover { background: rgba(255,255,255,0.15); }
+        .map-tool-btn.active { background: rgba(102,126,234,0.4); border-color: #667eea; }
+
         .chart-container {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 12px;
-            padding: 1.5rem;
+            padding: 1.25rem;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        
+
         .vulnerability-legend {
             display: flex;
             gap: 1rem;
-            margin-top: 1rem;
             flex-wrap: wrap;
         }
-        
+
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            font-size: 0.85rem;
+            gap: 0.4rem;
+            font-size: 0.8rem;
         }
-        
+
         .legend-color {
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
         }
-        
+
         .simulation-controls {
             display: flex;
-            gap: 1rem;
-            margin-top: 1rem;
+            gap: 0.75rem;
+            flex-wrap: wrap;
         }
-        
+
         .btn {
-            padding: 0.75rem 1.5rem;
+            padding: 0.6rem 1.2rem;
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 8px;
             color: white;
             cursor: pointer;
             transition: all 0.3s ease;
+            font-size: 0.85rem;
         }
-        
-        .btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-        
+
+        .btn:hover { background: rgba(255, 255, 255, 0.2); }
+
         .btn-primary {
             background: linear-gradient(135deg, #ff6b6b, #ffd93d);
             border: none;
             font-weight: 600;
         }
-        
+
+        /* Cost-Benefit Calculator */
+        .budget-input-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .budget-input-row input {
+            flex: 1;
+            padding: 0.5rem;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            color: #eaeaea;
+            font-size: 0.9rem;
+        }
+
+        .budget-input-row button {
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .optimal-mix {
+            display: none;
+            margin-top: 0.5rem;
+        }
+
+        .optimal-mix.show { display: block; }
+
+        .mix-bar {
+            display: flex;
+            height: 24px;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        .mix-segment {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+            min-width: 20px;
+        }
+
+        /* Scenario comparison */
+        .scenario-compare {
+            display: none;
+            gap: 1rem;
+        }
+
+        .scenario-compare.show {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .scenario-col {
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .scenario-col h4 {
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            color: #ffd93d;
+        }
+
+        .compare-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.3rem 0;
+            font-size: 0.8rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .compare-row .better { color: #51b749; font-weight: 600; }
+        .compare-row .worse { color: #ff6b6b; }
+
+        /* Equity panel */
+        .equity-bar-outer {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            margin: 0.4rem 0;
+        }
+
+        .equity-bar-inner {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .equity-label-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.78rem;
+        }
+
+        /* Tabs for bottom panels */
+        .tab-bar {
+            display: flex;
+            gap: 0.25rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .tab-btn {
+            padding: 0.4rem 0.8rem;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px 6px 0 0;
+            color: #eaeaea;
+            cursor: pointer;
+            font-size: 0.78rem;
+        }
+
+        .tab-btn.active {
+            background: rgba(255,255,255,0.1);
+            border-bottom-color: transparent;
+            color: #ffd93d;
+        }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
         @media (max-width: 1024px) {
-            .container {
-                grid-template-columns: 1fr;
-            }
+            .container { grid-template-columns: 1fr; }
+            .scenario-compare.show { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>Phoenix Civic Simulation Engine</h1>
-        <p>Human-AI collaborative urban heat intervention planning • Built by Ross Sakowski & Astra</p>
+        <div>
+            <h1>Phoenix Civic Simulation Engine</h1>
+            <p>Human-AI collaborative urban heat intervention planning &bull; Built by Ross Sakowski &amp; Astra</p>
+        </div>
+        <div class="header-date" id="header-date"></div>
     </div>
-    
+
     <div class="container">
         <div class="sidebar">
+            <!-- Current Conditions -->
             <div class="panel">
                 <h3>Current Conditions</h3>
                 <div class="stat-card">
-                    <div class="stat-value" id="temp-display">108°F</div>
-                    <div class="stat-label">Today's High Temperature</div>
+                    <div class="stat-value" id="temp-display">--</div>
+                    <div class="stat-label" id="temp-label">Today's High Temperature</div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="vulnerable-pop">47,832</div>
-                    <div class="stat-label">High-Risk Population</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="predicted-deaths">12</div>
-                    <div class="stat-label">Predicted Heat Deaths Today</div>
+                <div class="stat-row">
+                    <div class="stat-card">
+                        <div class="stat-value" id="vulnerable-pop">--</div>
+                        <div class="stat-label">High-Risk Pop.</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="predicted-deaths">--</div>
+                        <div class="stat-label">Predicted Heat Deaths Today</div>
+                    </div>
                 </div>
             </div>
-            
+
+            <!-- Interventions -->
             <div class="panel">
                 <h3>Interventions</h3>
-                <button class="intervention-btn" onclick="toggleIntervention('trees')">
-                    🌳 Plant 1,000 Trees
-                </button>
-                <button class="intervention-btn" onclick="toggleIntervention('cooling')">
-                    ❄️ Deploy Cooling Centers
-                </button>
-                <button class="intervention-btn" onclick="toggleIntervention('transit')">
-                    🚌 Transit Cooling Buses
-                </button>
-                <button class="intervention-btn" onclick="toggleIntervention('roofs')">
-                    🏠 Cool Roof Program
-                </button>
+
+                <!-- Tree Canopy -->
+                <div class="intervention-group">
+                    <button class="intervention-btn" onclick="toggleIntervention('trees', this)">
+                        &#x1F333; Tree Canopy Expansion
+                    </button>
+                    <div class="intervention-detail" id="detail-trees">
+                        <div style="margin-bottom:0.5rem; opacity:0.7;">Select species &amp; pattern:</div>
+                        <div class="sub-option selected" onclick="selectTreeSpecies(this, 'desert_willow')">
+                            <input type="radio" name="tree" checked>
+                            <span class="sub-label">Desert Willow &mdash; 15ft canopy, low water</span>
+                            <span class="sub-cost">$85</span>
+                        </div>
+                        <div class="sub-option" onclick="selectTreeSpecies(this, 'palo_verde')">
+                            <input type="radio" name="tree">
+                            <span class="sub-label">Palo Verde &mdash; 25ft canopy, native</span>
+                            <span class="sub-cost">$120</span>
+                        </div>
+                        <div class="sub-option" onclick="selectTreeSpecies(this, 'mesquite')">
+                            <input type="radio" name="tree">
+                            <span class="sub-label">Mesquite &mdash; 30ft canopy, high cooling</span>
+                            <span class="sub-cost">$150</span>
+                        </div>
+                        <div class="sub-option" onclick="selectTreeSpecies(this, 'arizona_ash')">
+                            <input type="radio" name="tree">
+                            <span class="sub-label">Arizona Ash &mdash; 40ft canopy, max cooling</span>
+                            <span class="sub-cost">$200</span>
+                        </div>
+                        <table class="detail-table" style="margin-top:0.5rem;">
+                            <tr><td>Planting pattern</td><td id="tree-pattern">Cool Corridors</td></tr>
+                            <tr><td>3-yr water cost/tree</td><td id="tree-water">$240</td></tr>
+                            <tr><td>Annual maint./tree</td><td>$50</td></tr>
+                            <tr><td>Time to effective shade</td><td id="tree-time">3-5 yrs</td></tr>
+                            <tr><td>Cooling effect</td><td id="tree-cooling">2.0&deg;C</td></tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Cooling Centers -->
+                <div class="intervention-group">
+                    <button class="intervention-btn" onclick="toggleIntervention('cooling', this)">
+                        &#x2744;&#xFE0F; Cooling Centers
+                    </button>
+                    <div class="intervention-detail" id="detail-cooling">
+                        <div style="margin-bottom:0.5rem; opacity:0.7;">Select center type:</div>
+                        <div class="sub-option selected" onclick="selectCoolingType(this, 'emergency')">
+                            <input type="radio" name="cooling" checked>
+                            <span class="sub-label">24/7 Emergency Center &mdash; medical staff, cots</span>
+                            <span class="sub-cost">$500K</span>
+                        </div>
+                        <div class="sub-option" onclick="selectCoolingType(this, 'library')">
+                            <input type="radio" name="cooling">
+                            <span class="sub-label">Extended Library Hours &mdash; retrofit existing</span>
+                            <span class="sub-cost">$50K</span>
+                        </div>
+                        <div class="sub-option" onclick="selectCoolingType(this, 'mobile')">
+                            <input type="radio" name="cooling">
+                            <span class="sub-label">Mobile Cooling Station &mdash; follows need</span>
+                            <span class="sub-cost">$150K</span>
+                        </div>
+                        <table class="detail-table" style="margin-top:0.5rem;">
+                            <tr><td>Daily operating cost</td><td id="cooling-ops">$2,000</td></tr>
+                            <tr><td>Capacity</td><td id="cooling-cap">200 people</td></tr>
+                            <tr><td>Coverage radius</td><td>0.5 mi walk</td></tr>
+                            <tr><td>Activation trigger</td><td>&gt;110&deg;F forecast</td></tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Transit Cooling -->
+                <div class="intervention-group">
+                    <button class="intervention-btn" onclick="toggleIntervention('transit', this)">
+                        &#x1F68C; Transit Cooling Buses
+                    </button>
+                    <div class="intervention-detail" id="detail-transit">
+                        <div style="margin-bottom:0.5rem; opacity:0.7;">Deployment strategy:</div>
+                        <div class="sub-option selected" onclick="selectTransitMode(this, 'static')">
+                            <input type="radio" name="transit" checked>
+                            <span class="sub-label">Static &mdash; parked at high-need locations</span>
+                        </div>
+                        <div class="sub-option" onclick="selectTransitMode(this, 'circuit')">
+                            <input type="radio" name="transit">
+                            <span class="sub-label">Circuit &mdash; 2-hr stops at 4 locations</span>
+                        </div>
+                        <div class="sub-option" onclick="selectTransitMode(this, 'ondemand')">
+                            <input type="radio" name="transit">
+                            <span class="sub-label">On-demand &mdash; dispatch to emergencies</span>
+                        </div>
+                        <table class="detail-table" style="margin-top:0.5rem;">
+                            <tr><td>Cost per bus</td><td>$300,000</td></tr>
+                            <tr><td>Daily ops cost</td><td>$800</td></tr>
+                            <tr><td>Capacity</td><td>30 seated + 20 standing</td></tr>
+                            <tr><td>Features</td><td>AC, water, BP monitor</td></tr>
+                            <tr><td>Hours</td><td>10am-8pm (hot hours)</td></tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Cool Roofs -->
+                <div class="intervention-group">
+                    <button class="intervention-btn" onclick="toggleIntervention('roofs', this)">
+                        &#x1F3E0; Cool Roof Program
+                    </button>
+                    <div class="intervention-detail" id="detail-roofs">
+                        <div style="margin-bottom:0.5rem; opacity:0.7;">Select material:</div>
+                        <div class="sub-option selected" onclick="selectRoofMaterial(this, 'tpo')">
+                            <input type="radio" name="roof" checked>
+                            <span class="sub-label">White TPO membrane &mdash; 20yr, best reflectivity</span>
+                            <span class="sub-cost">$2.50/ft&sup2;</span>
+                        </div>
+                        <div class="sub-option" onclick="selectRoofMaterial(this, 'shingle')">
+                            <input type="radio" name="roof">
+                            <span class="sub-label">Cool asphalt shingles &mdash; 15yr, familiar look</span>
+                            <span class="sub-cost">$3.50/ft&sup2;</span>
+                        </div>
+                        <div class="sub-option" onclick="selectRoofMaterial(this, 'metal')">
+                            <input type="radio" name="roof">
+                            <span class="sub-label">Metal roofing &mdash; 50yr, industrial</span>
+                            <span class="sub-cost">$5.00/ft&sup2;</span>
+                        </div>
+                        <div class="sub-option" onclick="selectRoofMaterial(this, 'green')">
+                            <input type="radio" name="roof">
+                            <span class="sub-label">Green roof (vegetation) &mdash; best insulation</span>
+                            <span class="sub-cost">$15/ft&sup2;</span>
+                        </div>
+                        <table class="detail-table" style="margin-top:0.5rem;">
+                            <tr><td>Target buildings</td><td id="roof-target">Low-income housing</td></tr>
+                            <tr><td>Avg roof size</td><td>1,500 ft&sup2;</td></tr>
+                            <tr><td>Cooling effect</td><td id="roof-cooling">5.0&deg;C</td></tr>
+                            <tr><td>Solar compatible</td><td>Yes</td></tr>
+                        </table>
+                    </div>
+                </div>
             </div>
-            
+
+            <!-- Projected Impact -->
             <div class="panel">
                 <h3>Projected Impact</h3>
-                <div class="stat-card">
-                    <div class="stat-value" style="color: #51b749;" id="deaths-prevented">0</div>
-                    <div class="stat-label">Deaths Prevented</div>
+                <div class="stat-card green">
+                    <div class="stat-value" id="deaths-prevented">0</div>
+                    <div class="stat-label">Deaths Prevented (annual)</div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-value" style="color: #5484ed;" id="cost-per-life">-</div>
-                    <div class="stat-label">Cost Per Life Saved</div>
+                <div class="stat-row">
+                    <div class="stat-card blue">
+                        <div class="stat-value" id="cost-per-life">-</div>
+                        <div class="stat-label">Cost Per Life Saved</div>
+                    </div>
+                    <div class="stat-card yellow">
+                        <div class="stat-value" id="roi">0%</div>
+                        <div class="stat-label">Healthcare Savings</div>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-value" style="color: #ffd93d;" id="roi">0%</div>
-                    <div class="stat-label">Healthcare Cost Savings</div>
+            </div>
+
+            <!-- Equity Analysis -->
+            <div class="panel">
+                <h3>Equity Analysis</h3>
+                <div class="equity-label-row">
+                    <span>Low-income coverage</span>
+                    <span id="equity-lowinc">0%</span>
+                </div>
+                <div class="equity-bar-outer">
+                    <div class="equity-bar-inner" id="bar-lowinc" style="width:0%; background:#ff6b6b;"></div>
+                </div>
+                <div class="equity-label-row">
+                    <span>Elderly coverage</span>
+                    <span id="equity-elderly">0%</span>
+                </div>
+                <div class="equity-bar-outer">
+                    <div class="equity-bar-inner" id="bar-elderly" style="width:0%; background:#e67e22;"></div>
+                </div>
+                <div class="equity-label-row">
+                    <span>No-AC households reached</span>
+                    <span id="equity-noac">0%</span>
+                </div>
+                <div class="equity-bar-outer">
+                    <div class="equity-bar-inner" id="bar-noac" style="width:0%; background:#ffd93d;"></div>
+                </div>
+                <div class="equity-label-row" style="margin-top:0.5rem;">
+                    <span>Equity Score</span>
+                    <span id="equity-score" style="font-weight:700; color:#51b749;">--</span>
+                </div>
+            </div>
+
+            <!-- Cost-Benefit Calculator -->
+            <div class="panel">
+                <h3>Budget Optimizer</h3>
+                <div class="budget-input-row">
+                    <span>$</span>
+                    <input type="number" id="budget-input" placeholder="Enter total budget" value="5000000">
+                    <button onclick="optimizeBudget()">Optimize</button>
+                </div>
+                <div class="optimal-mix" id="optimal-mix">
+                    <div style="font-size:0.8rem; margin-bottom:0.4rem; opacity:0.7;">Optimal allocation for maximum lives saved:</div>
+                    <div class="mix-bar" id="mix-bar"></div>
+                    <div id="mix-details" style="font-size:0.78rem;"></div>
                 </div>
             </div>
         </div>
-        
+
+        <!-- Main content -->
         <div class="main-content">
+            <!-- Map toolbar -->
+            <div class="map-toolbar">
+                <button class="map-tool-btn active" onclick="setMapMode('view', this)">View</button>
+                <button class="map-tool-btn" onclick="setMapMode('place_tree', this)">+ Place Trees</button>
+                <button class="map-tool-btn" onclick="setMapMode('place_cooling', this)">+ Place Cooling Center</button>
+                <button class="map-tool-btn" onclick="setMapMode('place_roof', this)">+ Cool Roof Zone</button>
+                <span style="flex:1"></span>
+                <button class="map-tool-btn" onclick="toggleCoverageCircles()">Coverage Radius</button>
+                <button class="map-tool-btn" onclick="clearPlacements()">Clear Placements</button>
+            </div>
+
             <div id="map"></div>
-            
+
             <div class="vulnerability-legend">
                 <div class="legend-item">
                     <div class="legend-color" style="background: #2ecc71;"></div>
-                    <span>Low Risk (0-25)</span>
+                    <span>Low (0-25)</span>
                 </div>
                 <div class="legend-item">
                     <div class="legend-color" style="background: #f1c40f;"></div>
-                    <span>Moderate Risk (25-50)</span>
+                    <span>Moderate (25-50)</span>
                 </div>
                 <div class="legend-item">
                     <div class="legend-color" style="background: #e67e22;"></div>
-                    <span>High Risk (50-75)</span>
+                    <span>High (50-75)</span>
                 </div>
                 <div class="legend-item">
                     <div class="legend-color" style="background: #e74c3c;"></div>
-                    <span>Extreme Risk (75-100)</span>
+                    <span>Extreme (75-100)</span>
+                </div>
+                <span style="flex:1"></span>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: rgba(102,126,234,0.3); border: 2px dashed #667eea;"></div>
+                    <span>Intervention coverage</span>
                 </div>
             </div>
-            
+
+            <!-- Tabbed panels -->
             <div class="chart-container">
-                <h3 style="color: #ffd93d; margin-bottom: 1rem;">Temperature vs. Heat Deaths (2024)</h3>
-                <canvas id="deathsChart"></canvas>
+                <div class="tab-bar">
+                    <button class="tab-btn active" onclick="switchTab('chart', this)">Temperature vs Deaths</button>
+                    <button class="tab-btn" onclick="switchTab('compare', this)">Compare Scenarios</button>
+                    <button class="tab-btn" onclick="switchTab('timeline', this)">Implementation Timeline</button>
+                </div>
+
+                <div class="tab-panel active" id="tab-chart">
+                    <canvas id="deathsChart"></canvas>
+                </div>
+
+                <div class="tab-panel" id="tab-compare">
+                    <div class="scenario-compare show" id="scenario-compare">
+                        <div class="scenario-col">
+                            <h4>Scenario A: Current Selections</h4>
+                            <div id="compare-a">
+                                <div class="compare-row"><span>Active interventions</span><span id="cmp-a-count">0</span></div>
+                                <div class="compare-row"><span>Total cost</span><span id="cmp-a-cost">$0</span></div>
+                                <div class="compare-row"><span>Deaths prevented</span><span id="cmp-a-deaths">0</span></div>
+                                <div class="compare-row"><span>Cost per life saved</span><span id="cmp-a-cpl">-</span></div>
+                                <div class="compare-row"><span>ER visits prevented</span><span id="cmp-a-er">0</span></div>
+                                <div class="compare-row"><span>Equity score</span><span id="cmp-a-equity">--</span></div>
+                            </div>
+                        </div>
+                        <div class="scenario-col">
+                            <h4>Scenario B: All Interventions</h4>
+                            <div id="compare-b">
+                                <div class="compare-row"><span>Active interventions</span><span>4</span></div>
+                                <div class="compare-row"><span>Total cost</span><span>$2,100,000</span></div>
+                                <div class="compare-row"><span>Deaths prevented</span><span class="better">14</span></div>
+                                <div class="compare-row"><span>Cost per life saved</span><span>$150,000</span></div>
+                                <div class="compare-row"><span>ER visits prevented</span><span class="better">420</span></div>
+                                <div class="compare-row"><span>Equity score</span><span class="better">A</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-panel" id="tab-timeline">
+                    <div style="font-size:0.85rem;">
+                        <div style="margin-bottom:0.75rem; opacity:0.7;">Phased rollout schedule for selected interventions:</div>
+                        <div id="timeline-content">
+                            <p style="opacity:0.5; text-align:center; padding:2rem;">Select interventions to see implementation timeline</p>
+                        </div>
+                    </div>
+                </div>
             </div>
-            
+
             <div class="simulation-controls">
-                <button class="btn btn-primary" onclick="runSimulation()">▶ Run 30-Day Simulation</button>
-                <button class="btn" onclick="exportReport()">📊 Export Report</button>
-                <button class="btn" onclick="resetScenario()">↺ Reset Scenario</button>
+                <button class="btn btn-primary" onclick="runSimulation()">Run 30-Day Simulation</button>
+                <button class="btn" onclick="exportReport()">Export Report</button>
+                <button class="btn" onclick="resetScenario()">Reset Scenario</button>
             </div>
         </div>
     </div>
 
     <script>
-        // Phoenix coordinates
+        // ====================================================================
+        // Date-aware temperature calculation
+        // ====================================================================
+        function getPhoenixSeasonalTemp() {
+            const now = new Date();
+            const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
+            // Phoenix seasonal model: avg high peaks ~115F in July, low ~67F in December
+            const avgHigh = 91 + 24 * Math.sin(2 * Math.PI * (dayOfYear - 80) / 365 - Math.PI / 2);
+            // Add small daily variation
+            const variation = (Math.sin(now.getHours()) * 3);
+            return Math.round(avgHigh + variation);
+        }
+
+        function getPhoenixDeathsForTemp(temp) {
+            if (temp < 95) return 0;
+            if (temp < 100) return Math.round((temp - 95) * 0.4);
+            if (temp < 105) return Math.round(2 + (temp - 100) * 1.4);
+            if (temp < 110) return Math.round(9 + (temp - 105) * 3.2);
+            return Math.round(25 + (temp - 110) * 3.4);
+        }
+
+        // ====================================================================
+        // Tree species database
+        // ====================================================================
+        const treeSpecies = {
+            desert_willow:  { name: 'Desert Willow',  cost: 85,  canopy: 15, years: '3-5', water: 240, cooling: 1.5 },
+            palo_verde:     { name: 'Palo Verde',     cost: 120, canopy: 25, years: '5-7', water: 120, cooling: 2.0 },
+            mesquite:       { name: 'Mesquite',        cost: 150, canopy: 30, years: '7-10', water: 80,  cooling: 2.5 },
+            arizona_ash:    { name: 'Arizona Ash',     cost: 200, canopy: 40, years: '10-15', water: 480, cooling: 3.0 },
+        };
+        let selectedTree = 'desert_willow';
+
+        function selectTreeSpecies(el, species) {
+            el.parentElement.querySelectorAll('.sub-option').forEach(s => { s.classList.remove('selected'); s.querySelector('input').checked = false; });
+            el.classList.add('selected');
+            el.querySelector('input').checked = true;
+            selectedTree = species;
+            const s = treeSpecies[species];
+            document.getElementById('tree-water').textContent = '$' + s.water;
+            document.getElementById('tree-time').textContent = s.years + ' yrs';
+            document.getElementById('tree-cooling').textContent = s.cooling + '\u00B0C';
+            updateImpactProjection();
+        }
+
+        // ====================================================================
+        // Cooling center types
+        // ====================================================================
+        const coolingTypes = {
+            emergency: { cost: 500000, ops: 2000, cap: 200, label: '200 people' },
+            library:   { cost: 50000,  ops: 500,  cap: 100, label: '100 people' },
+            mobile:    { cost: 150000, ops: 300,  cap: 50,  label: '50 per station' },
+        };
+        let selectedCooling = 'emergency';
+
+        function selectCoolingType(el, type) {
+            el.parentElement.querySelectorAll('.sub-option').forEach(s => { s.classList.remove('selected'); s.querySelector('input').checked = false; });
+            el.classList.add('selected');
+            el.querySelector('input').checked = true;
+            selectedCooling = type;
+            const c = coolingTypes[type];
+            document.getElementById('cooling-ops').textContent = '$' + c.ops.toLocaleString();
+            document.getElementById('cooling-cap').textContent = c.label;
+            updateImpactProjection();
+        }
+
+        // ====================================================================
+        // Transit modes
+        // ====================================================================
+        let selectedTransit = 'static';
+        function selectTransitMode(el, mode) {
+            el.parentElement.querySelectorAll('.sub-option').forEach(s => { s.classList.remove('selected'); s.querySelector('input').checked = false; });
+            el.classList.add('selected');
+            el.querySelector('input').checked = true;
+            selectedTransit = mode;
+            updateImpactProjection();
+        }
+
+        // ====================================================================
+        // Roof materials
+        // ====================================================================
+        const roofMaterials = {
+            tpo:     { cost: 2.5,  life: 20, cooling: 5.0 },
+            shingle: { cost: 3.5,  life: 15, cooling: 3.0 },
+            metal:   { cost: 5.0,  life: 50, cooling: 4.0 },
+            green:   { cost: 15.0, life: 30, cooling: 7.0 },
+        };
+        let selectedRoof = 'tpo';
+
+        function selectRoofMaterial(el, material) {
+            el.parentElement.querySelectorAll('.sub-option').forEach(s => { s.classList.remove('selected'); s.querySelector('input').checked = false; });
+            el.classList.add('selected');
+            el.querySelector('input').checked = true;
+            selectedRoof = material;
+            const m = roofMaterials[material];
+            document.getElementById('roof-cooling').textContent = m.cooling + '\u00B0C';
+            updateImpactProjection();
+        }
+
+        // ====================================================================
+        // Map setup
+        // ====================================================================
         const phoenixCoords = [33.4484, -112.0740];
-        
-        // Initialize map
         const map = L.map('map').setView(phoenixCoords, 11);
-        
+
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
+            attribution: '\u00A9 OpenStreetMap contributors'
         }).addTo(map);
-        
-        // Generate synthetic vulnerable areas for demo
+
+        // Generate vulnerable areas
         const vulnerableAreas = [];
         for (let i = 0; i < 150; i++) {
             const lat = phoenixCoords[0] + (Math.random() - 0.5) * 0.3;
             const lng = phoenixCoords[1] + (Math.random() - 0.5) * 0.4;
             const risk = Math.random() * 100;
-            
+            const pop = Math.floor(Math.random() * 500 + 100);
+            const elderly = Math.floor(Math.random() * 100);
+            const noAc = Math.floor(Math.random() * 50);
+            const income = Math.floor(Math.random() * 60000 + 15000);
+
             let color;
             if (risk < 25) color = '#2ecc71';
             else if (risk < 50) color = '#f1c40f';
             else if (risk < 75) color = '#e67e22';
             else color = '#e74c3c';
-            
+
             const circle = L.circle([lat, lng], {
-                color: color,
-                fillColor: color,
-                fillOpacity: 0.5,
+                color: color, fillColor: color, fillOpacity: 0.5,
                 radius: 300 + Math.random() * 400
             }).addTo(map);
-            
+
             circle.bindPopup(`
-                <strong>Vulnerability Score: ${risk.toFixed(1)}</strong><br>
-                Population at risk: ${Math.floor(Math.random() * 500 + 100)}<br>
-                Elderly residents: ${Math.floor(Math.random() * 100)}<br>
-                Without AC: ${Math.floor(Math.random() * 50)}%
+                <div style="font-family:sans-serif; min-width:180px;">
+                    <strong style="font-size:1.1em;">Vulnerability: ${risk.toFixed(1)}</strong><br>
+                    <hr style="border:none; border-top:1px solid #ddd; margin:4px 0;">
+                    <b>Population:</b> ${pop}<br>
+                    <b>Elderly (65+):</b> ${elderly}<br>
+                    <b>Without AC:</b> ${noAc}%<br>
+                    <b>Median income:</b> $${income.toLocaleString()}<br>
+                    <b>Risk level:</b> ${risk < 25 ? 'Low' : risk < 50 ? 'Moderate' : risk < 75 ? 'High' : 'Extreme'}
+                </div>
             `);
-            
-            vulnerableAreas.push({circle, risk, lat, lng});
+
+            vulnerableAreas.push({circle, risk, lat, lng, pop, elderly, noAc, income});
         }
-        
-        // Active interventions
+
+        // ====================================================================
+        // Map interaction - placement mode
+        // ====================================================================
+        let mapMode = 'view';
+        const placements = [];
+        const coverageCircles = [];
+        let showCoverage = false;
+
+        function setMapMode(mode, btn) {
+            mapMode = mode;
+            document.querySelectorAll('.map-tool-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            map.getContainer().style.cursor = mode === 'view' ? '' : 'crosshair';
+        }
+
+        map.on('click', function(e) {
+            if (mapMode === 'view') return;
+
+            let icon, label, radius, fillColor;
+            if (mapMode === 'place_tree') {
+                fillColor = '#2ecc71';
+                label = 'Tree corridor';
+                radius = 500;
+            } else if (mapMode === 'place_cooling') {
+                fillColor = '#5484ed';
+                label = 'Cooling center';
+                radius = 800;
+            } else if (mapMode === 'place_roof') {
+                fillColor = '#ffd93d';
+                label = 'Cool roof zone';
+                radius = 600;
+            } else return;
+
+            const marker = L.circleMarker(e.latlng, {
+                radius: 8, fillColor: fillColor, color: '#fff',
+                weight: 2, fillOpacity: 0.9
+            }).addTo(map);
+            marker.bindPopup(`<b>${label}</b><br>Lat: ${e.latlng.lat.toFixed(4)}<br>Lon: ${e.latlng.lng.toFixed(4)}`);
+
+            const coverage = L.circle(e.latlng, {
+                radius: radius, color: fillColor, fillColor: fillColor,
+                fillOpacity: 0.08, weight: 1, dashArray: '6,4'
+            });
+            if (showCoverage) coverage.addTo(map);
+
+            placements.push({marker, coverage, type: mapMode});
+            coverageCircles.push(coverage);
+        });
+
+        function toggleCoverageCircles() {
+            showCoverage = !showCoverage;
+            coverageCircles.forEach(c => {
+                if (showCoverage) c.addTo(map);
+                else map.removeLayer(c);
+            });
+        }
+
+        function clearPlacements() {
+            placements.forEach(p => {
+                map.removeLayer(p.marker);
+                map.removeLayer(p.coverage);
+            });
+            placements.length = 0;
+            coverageCircles.length = 0;
+        }
+
+        // ====================================================================
+        // Interventions state & impact
+        // ====================================================================
         const activeInterventions = new Set();
-        
-        function toggleIntervention(type) {
-            const btn = event.target;
+
+        function toggleIntervention(type, btn) {
+            const detail = document.getElementById('detail-' + type);
             if (activeInterventions.has(type)) {
                 activeInterventions.delete(type);
                 btn.classList.remove('active');
+                detail.classList.remove('show');
             } else {
                 activeInterventions.add(type);
                 btn.classList.add('active');
+                detail.classList.add('show');
             }
             updateImpactProjection();
+            updateCompare();
+            updateTimeline();
         }
-        
+
         function updateImpactProjection() {
             let deathsPrevented = 0;
             let totalCost = 0;
-            
+            let erPrevented = 0;
+
+            // Equity metrics
+            let lowIncCoverage = 0, elderlyCoverage = 0, noAcCoverage = 0;
+
             if (activeInterventions.has('trees')) {
-                deathsPrevented += 3;
-                totalCost += 500000;
+                const s = treeSpecies[selectedTree];
+                const treeCost = 1000 * (s.cost + s.water + 50);
+                totalCost += treeCost;
+                deathsPrevented += Math.round(3 * (s.cooling / 2));
+                erPrevented += Math.round(90 * (s.cooling / 2));
+                lowIncCoverage += 15; elderlyCoverage += 10; noAcCoverage += 12;
             }
             if (activeInterventions.has('cooling')) {
-                deathsPrevented += 5;
-                totalCost += 500000;
+                const c = coolingTypes[selectedCooling];
+                totalCost += c.cost + (c.ops * 120); // 120 hot days/year ops
+                deathsPrevented += Math.round(5 * (c.cap / 200));
+                erPrevented += Math.round(150 * (c.cap / 200));
+                lowIncCoverage += 25; elderlyCoverage += 30; noAcCoverage += 35;
             }
             if (activeInterventions.has('transit')) {
+                totalCost += 300000 + (800 * 120);
                 deathsPrevented += 2;
-                totalCost += 300000;
+                erPrevented += 60;
+                lowIncCoverage += 20; elderlyCoverage += 15; noAcCoverage += 25;
             }
             if (activeInterventions.has('roofs')) {
-                deathsPrevented += 4;
-                totalCost += 800000;
+                const m = roofMaterials[selectedRoof];
+                const roofCost = 500 * 1500 * m.cost; // 500 buildings * 1500 sqft
+                totalCost += roofCost;
+                deathsPrevented += Math.round(4 * (m.cooling / 5));
+                erPrevented += Math.round(120 * (m.cooling / 5));
+                lowIncCoverage += 30; elderlyCoverage += 20; noAcCoverage += 28;
             }
-            
+
             document.getElementById('deaths-prevented').textContent = deathsPrevented;
-            document.getElementById('cost-per-life').textContent = deathsPrevented > 0 
-                ? '$' + (totalCost / deathsPrevented).toLocaleString() 
+            document.getElementById('cost-per-life').textContent = deathsPrevented > 0
+                ? '$' + Math.round(totalCost / deathsPrevented).toLocaleString()
                 : '-';
-            document.getElementById('roi').textContent = deathsPrevented > 0 
-                ? Math.floor(deathsPrevented * 2500000 / totalCost * 100) + '%' 
+            document.getElementById('roi').textContent = deathsPrevented > 0
+                ? Math.floor(deathsPrevented * 2500000 / totalCost * 100) + '%'
                 : '0%';
-            
-            // Update vulnerable population display
+
+            // Update vulnerable pop
             const baseVulnerable = 47832;
-            const reduction = activeInterventions.size * 3500;
-            document.getElementById('vulnerable-pop').textContent = (baseVulnerable - reduction).toLocaleString();
+            const reduction = deathsPrevented * 350;
+            document.getElementById('vulnerable-pop').textContent = Math.max(0, baseVulnerable - reduction).toLocaleString();
+
+            // Update equity bars (cap at 100)
+            lowIncCoverage = Math.min(100, lowIncCoverage);
+            elderlyCoverage = Math.min(100, elderlyCoverage);
+            noAcCoverage = Math.min(100, noAcCoverage);
+
+            document.getElementById('equity-lowinc').textContent = lowIncCoverage + '%';
+            document.getElementById('bar-lowinc').style.width = lowIncCoverage + '%';
+            document.getElementById('bar-lowinc').style.background = lowIncCoverage > 50 ? '#51b749' : '#ff6b6b';
+
+            document.getElementById('equity-elderly').textContent = elderlyCoverage + '%';
+            document.getElementById('bar-elderly').style.width = elderlyCoverage + '%';
+            document.getElementById('bar-elderly').style.background = elderlyCoverage > 50 ? '#51b749' : '#e67e22';
+
+            document.getElementById('equity-noac').textContent = noAcCoverage + '%';
+            document.getElementById('bar-noac').style.width = noAcCoverage + '%';
+            document.getElementById('bar-noac').style.background = noAcCoverage > 50 ? '#51b749' : '#ffd93d';
+
+            const avgEquity = (lowIncCoverage + elderlyCoverage + noAcCoverage) / 3;
+            let grade;
+            if (avgEquity >= 80) grade = 'A';
+            else if (avgEquity >= 60) grade = 'B';
+            else if (avgEquity >= 40) grade = 'C';
+            else if (avgEquity >= 20) grade = 'D';
+            else grade = '--';
+            document.getElementById('equity-score').textContent = grade;
+            document.getElementById('equity-score').style.color = avgEquity >= 60 ? '#51b749' : avgEquity >= 30 ? '#ffd93d' : '#ff6b6b';
         }
-        
-        // Temperature vs Deaths Chart
+
+        // ====================================================================
+        // Scenario comparison
+        // ====================================================================
+        function updateCompare() {
+            let count = activeInterventions.size;
+            let cost = 0, deaths = 0, er = 0;
+
+            if (activeInterventions.has('trees')) { cost += treeSpecies[selectedTree].cost * 1000 + treeSpecies[selectedTree].water * 1000 + 50000; deaths += 3; er += 90; }
+            if (activeInterventions.has('cooling')) { const c = coolingTypes[selectedCooling]; cost += c.cost + c.ops * 120; deaths += 5; er += 150; }
+            if (activeInterventions.has('transit')) { cost += 396000; deaths += 2; er += 60; }
+            if (activeInterventions.has('roofs')) { cost += 500 * 1500 * roofMaterials[selectedRoof].cost; deaths += 4; er += 120; }
+
+            document.getElementById('cmp-a-count').textContent = count;
+            document.getElementById('cmp-a-cost').textContent = '$' + cost.toLocaleString();
+            document.getElementById('cmp-a-deaths').textContent = deaths;
+            document.getElementById('cmp-a-deaths').className = deaths >= 10 ? 'better' : '';
+            document.getElementById('cmp-a-cpl').textContent = deaths > 0 ? '$' + Math.round(cost / deaths).toLocaleString() : '-';
+            document.getElementById('cmp-a-er').textContent = er;
+            const avg = activeInterventions.size > 0 ? Math.min(100, activeInterventions.size * 22) : 0;
+            let g = avg >= 80 ? 'A' : avg >= 60 ? 'B' : avg >= 40 ? 'C' : avg >= 20 ? 'D' : '--';
+            document.getElementById('cmp-a-equity').textContent = g;
+        }
+
+        // ====================================================================
+        // Implementation timeline
+        // ====================================================================
+        function updateTimeline() {
+            const container = document.getElementById('timeline-content');
+            if (activeInterventions.size === 0) {
+                container.innerHTML = '<p style="opacity:0.5; text-align:center; padding:2rem;">Select interventions to see implementation timeline</p>';
+                return;
+            }
+
+            const phases = [];
+            const seasons = { spring: 'Mar-May', summer: 'Jun-Aug', fall: 'Sep-Nov', winter: 'Dec-Feb' };
+
+            if (activeInterventions.has('roofs')) {
+                phases.push({ name: 'Cool Roof Program', start: 'Spring Y1', duration: '6 months', note: 'Install during mild weather', color: '#ffd93d' });
+            }
+            if (activeInterventions.has('cooling')) {
+                phases.push({ name: 'Cooling Centers', start: 'Spring Y1', duration: '3 months', note: 'Ready before June heat', color: '#5484ed' });
+            }
+            if (activeInterventions.has('transit')) {
+                phases.push({ name: 'Transit Cooling Buses', start: 'Spring Y1', duration: '1 month', note: 'Deploy before heat season', color: '#e67e22' });
+            }
+            if (activeInterventions.has('trees')) {
+                phases.push({ name: 'Tree Canopy Expansion', start: 'Fall Y1', duration: '3 months planting + ' + treeSpecies[selectedTree].years + ' yrs growth', note: 'Plant in fall for root establishment', color: '#2ecc71' });
+            }
+
+            let html = '<div style="display:flex; flex-direction:column; gap:0.5rem;">';
+            phases.forEach((p, i) => {
+                html += `<div style="display:flex; align-items:center; gap:0.75rem; padding:0.5rem; background:rgba(255,255,255,0.03); border-radius:6px; border-left:3px solid ${p.color};">
+                    <div style="min-width:150px; font-weight:600; color:${p.color};">${p.name}</div>
+                    <div style="flex:1;">
+                        <div style="font-size:0.8rem;">${p.start} &mdash; ${p.duration}</div>
+                        <div style="font-size:0.72rem; opacity:0.6; margin-top:2px;">${p.note}</div>
+                    </div>
+                </div>`;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // ====================================================================
+        // Budget optimizer
+        // ====================================================================
+        function optimizeBudget() {
+            const budget = parseFloat(document.getElementById('budget-input').value) || 0;
+            if (budget <= 0) return;
+
+            // Simplified optimization: allocate by cost-effectiveness (deaths prevented per dollar)
+            const options = [
+                { name: 'Cooling Centers', cost: 740000, deaths: 5, color: '#5484ed' },
+                { name: 'Transit Buses', cost: 396000, deaths: 2, color: '#e67e22' },
+                { name: 'Tree Canopy', cost: 375000, deaths: 3, color: '#2ecc71' },
+                { name: 'Cool Roofs', cost: 1875000, deaths: 4, color: '#ffd93d' },
+            ];
+
+            // Sort by cost-effectiveness (deaths per dollar)
+            options.sort((a, b) => (b.deaths / b.cost) - (a.deaths / a.cost));
+
+            let remaining = budget;
+            const allocation = [];
+            let totalDeaths = 0;
+
+            options.forEach(opt => {
+                if (remaining <= 0) return;
+                const units = Math.floor(remaining / opt.cost);
+                if (units > 0) {
+                    const spend = Math.min(units * opt.cost, remaining);
+                    const deaths = units * opt.deaths;
+                    allocation.push({ ...opt, spend, deaths, units });
+                    totalDeaths += deaths;
+                    remaining -= spend;
+                }
+            });
+
+            // Render bar
+            const bar = document.getElementById('mix-bar');
+            bar.innerHTML = '';
+            allocation.forEach(a => {
+                const pct = (a.spend / budget * 100);
+                if (pct < 2) return;
+                const seg = document.createElement('div');
+                seg.className = 'mix-segment';
+                seg.style.width = pct + '%';
+                seg.style.background = a.color;
+                seg.textContent = Math.round(pct) + '%';
+                bar.appendChild(seg);
+            });
+
+            // Render details
+            const details = document.getElementById('mix-details');
+            let html = '';
+            allocation.forEach(a => {
+                html += `<div style="display:flex; justify-content:space-between; padding:0.2rem 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <span style="color:${a.color};">${a.name} (x${a.units})</span>
+                    <span>$${a.spend.toLocaleString()} &rarr; ${a.deaths} lives</span>
+                </div>`;
+            });
+            html += `<div style="display:flex; justify-content:space-between; padding:0.3rem 0; font-weight:700; margin-top:0.3rem; border-top:1px solid rgba(255,255,255,0.15);">
+                <span>Total</span>
+                <span style="color:#51b749;">${totalDeaths} lives saved &bull; $${Math.round((budget - remaining) / totalDeaths).toLocaleString()}/life</span>
+            </div>`;
+            details.innerHTML = html;
+
+            document.getElementById('optimal-mix').classList.add('show');
+        }
+
+        // ====================================================================
+        // Tab switching
+        // ====================================================================
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('tab-' + tabId).classList.add('active');
+        }
+
+        // ====================================================================
+        // Chart
+        // ====================================================================
         const ctx = document.getElementById('deathsChart').getContext('2d');
         const deathsChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: ['85°F', '90°F', '95°F', '100°F', '105°F', '110°F', '115°F', '120°F'],
+                labels: ['85\u00B0F', '90\u00B0F', '95\u00B0F', '100\u00B0F', '105\u00B0F', '110\u00B0F', '115\u00B0F', '120\u00B0F'],
                 datasets: [{
-                    label: 'Daily Heat Deaths',
+                    label: 'Daily Heat Deaths (no intervention)',
                     data: [0, 1, 2, 5, 12, 28, 45, 62],
                     borderColor: '#ff6b6b',
                     backgroundColor: 'rgba(255, 107, 107, 0.1)',
-                    tension: 0.4,
-                    fill: true
+                    tension: 0.4, fill: true
                 }, {
-                    label: 'With Interventions',
+                    label: 'With All Interventions',
                     data: [0, 0, 1, 2, 5, 12, 20, 30],
                     borderColor: '#51b749',
                     backgroundColor: 'rgba(81, 183, 73, 0.1)',
-                    tension: 0.4,
-                    fill: true
+                    tension: 0.4, fill: true
                 }]
             },
             options: {
                 responsive: true,
-                plugins: {
-                    legend: {
-                        labels: { color: '#eaeaea' }
-                    }
-                },
+                plugins: { legend: { labels: { color: '#eaeaea' } } },
                 scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                        ticks: { color: '#eaeaea' }
-                    },
-                    x: {
-                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                        ticks: { color: '#eaeaea' }
-                    }
+                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#eaeaea' } },
+                    x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#eaeaea' } }
                 }
             }
         });
-        
+
+        // ====================================================================
+        // Simulation & Export
+        // ====================================================================
         function runSimulation() {
-            alert('Running 30-day simulation...\n\nThis would connect to the backend simulation engine and show projected outcomes based on current intervention selections.');
+            const interventions = Array.from(activeInterventions);
+            if (interventions.length === 0) {
+                alert('Select at least one intervention to run a simulation.');
+                return;
+            }
+
+            // Show a simple in-page result instead of alert
+            const deaths = parseInt(document.getElementById('deaths-prevented').textContent);
+            const cost = document.getElementById('cost-per-life').textContent;
+            alert(
+                'Simulation Results (30-day projection):\n\n' +
+                'Active interventions: ' + interventions.join(', ') + '\n' +
+                'Deaths prevented: ' + deaths + '\n' +
+                'Cost per life saved: ' + cost + '\n\n' +
+                'Full simulation would connect to the backend engine\nat /api/simulate/intervention for detailed modeling.'
+            );
         }
-        
+
         function exportReport() {
             const report = {
                 date: new Date().toISOString(),
+                temperature: document.getElementById('temp-display').textContent,
                 interventions: Array.from(activeInterventions),
+                configuration: {
+                    tree_species: activeInterventions.has('trees') ? treeSpecies[selectedTree].name : null,
+                    cooling_type: activeInterventions.has('cooling') ? selectedCooling : null,
+                    transit_mode: activeInterventions.has('transit') ? selectedTransit : null,
+                    roof_material: activeInterventions.has('roofs') ? selectedRoof : null,
+                },
                 projectedDeathsPrevented: parseInt(document.getElementById('deaths-prevented').textContent),
-                vulnerablePopulation: document.getElementById('vulnerable-pop').textContent
+                costPerLifeSaved: document.getElementById('cost-per-life').textContent,
+                roi: document.getElementById('roi').textContent,
+                equityScore: document.getElementById('equity-score').textContent,
+                vulnerablePopulation: document.getElementById('vulnerable-pop').textContent,
             };
-            
+
             const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -427,12 +1269,40 @@
             a.download = 'phoenix-cse-report.json';
             a.click();
         }
-        
+
         function resetScenario() {
             activeInterventions.clear();
             document.querySelectorAll('.intervention-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.intervention-detail').forEach(d => d.classList.remove('show'));
+            clearPlacements();
             updateImpactProjection();
+            updateCompare();
+            updateTimeline();
+            document.getElementById('optimal-mix').classList.remove('show');
         }
+
+        // ====================================================================
+        // Initialize
+        // ====================================================================
+        (function init() {
+            // Date display
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('header-date').textContent = dateStr;
+
+            // Temperature
+            const temp = getPhoenixSeasonalTemp();
+            document.getElementById('temp-display').textContent = temp + '\u00B0F';
+            document.getElementById('temp-label').textContent = "Today's Estimated High";
+
+            // Predicted deaths based on temp
+            const deaths = getPhoenixDeathsForTemp(temp);
+            document.getElementById('predicted-deaths').textContent = deaths;
+            document.getElementById('vulnerable-pop').textContent = '47,832';
+
+            // Init compare
+            updateCompare();
+        })();
     </script>
 </body>
 </html>
