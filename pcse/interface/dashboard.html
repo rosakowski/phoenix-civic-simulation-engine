@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phoenix Civic Simulation Engine</title>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #eaeaea;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid rgba(255, 107, 107, 0.3);
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            background: linear-gradient(45deg, #ff6b6b, #ffd93d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            opacity: 0.8;
+            font-size: 0.95rem;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+        
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .panel h3 {
+            color: #ffd93d;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+        
+        .stat-card {
+            background: rgba(255, 107, 107, 0.1);
+            border-left: 3px solid #ff6b6b;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #ff6b6b;
+        }
+        
+        .stat-label {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            margin-top: 0.25rem;
+        }
+        
+        .intervention-btn {
+            width: 100%;
+            padding: 0.875rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .intervention-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .intervention-btn.active {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        #map {
+            height: 500px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .chart-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .vulnerability-legend {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        
+        .simulation-controls {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #ff6b6b, #ffd93d);
+            border: none;
+            font-weight: 600;
+        }
+        
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Phoenix Civic Simulation Engine</h1>
+        <p>Human-AI collaborative urban heat intervention planning • Built by Ross Sakowski & Astra</p>
+    </div>
+    
+    <div class="container">
+        <div class="sidebar">
+            <div class="panel">
+                <h3>Current Conditions</h3>
+                <div class="stat-card">
+                    <div class="stat-value" id="temp-display">108°F</div>
+                    <div class="stat-label">Today's High Temperature</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="vulnerable-pop">47,832</div>
+                    <div class="stat-label">High-Risk Population</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="predicted-deaths">12</div>
+                    <div class="stat-label">Predicted Heat Deaths Today</div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h3>Interventions</h3>
+                <button class="intervention-btn" onclick="toggleIntervention('trees')">
+                    🌳 Plant 1,000 Trees
+                </button>
+                <button class="intervention-btn" onclick="toggleIntervention('cooling')">
+                    ❄️ Deploy Cooling Centers
+                </button>
+                <button class="intervention-btn" onclick="toggleIntervention('transit')">
+                    🚌 Transit Cooling Buses
+                </button>
+                <button class="intervention-btn" onclick="toggleIntervention('roofs')">
+                    🏠 Cool Roof Program
+                </button>
+            </div>
+            
+            <div class="panel">
+                <h3>Projected Impact</h3>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: #51b749;" id="deaths-prevented">0</div>
+                    <div class="stat-label">Deaths Prevented</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: #5484ed;" id="cost-per-life">-</div>
+                    <div class="stat-label">Cost Per Life Saved</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: #ffd93d;" id="roi">0%</div>
+                    <div class="stat-label">Healthcare Cost Savings</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div id="map"></div>
+            
+            <div class="vulnerability-legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #2ecc71;"></div>
+                    <span>Low Risk (0-25)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f1c40f;"></div>
+                    <span>Moderate Risk (25-50)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #e67e22;"></div>
+                    <span>High Risk (50-75)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #e74c3c;"></div>
+                    <span>Extreme Risk (75-100)</span>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <h3 style="color: #ffd93d; margin-bottom: 1rem;">Temperature vs. Heat Deaths (2024)</h3>
+                <canvas id="deathsChart"></canvas>
+            </div>
+            
+            <div class="simulation-controls">
+                <button class="btn btn-primary" onclick="runSimulation()">▶ Run 30-Day Simulation</button>
+                <button class="btn" onclick="exportReport()">📊 Export Report</button>
+                <button class="btn" onclick="resetScenario()">↺ Reset Scenario</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Phoenix coordinates
+        const phoenixCoords = [33.4484, -112.0740];
+        
+        // Initialize map
+        const map = L.map('map').setView(phoenixCoords, 11);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        // Generate synthetic vulnerable areas for demo
+        const vulnerableAreas = [];
+        for (let i = 0; i < 150; i++) {
+            const lat = phoenixCoords[0] + (Math.random() - 0.5) * 0.3;
+            const lng = phoenixCoords[1] + (Math.random() - 0.5) * 0.4;
+            const risk = Math.random() * 100;
+            
+            let color;
+            if (risk < 25) color = '#2ecc71';
+            else if (risk < 50) color = '#f1c40f';
+            else if (risk < 75) color = '#e67e22';
+            else color = '#e74c3c';
+            
+            const circle = L.circle([lat, lng], {
+                color: color,
+                fillColor: color,
+                fillOpacity: 0.5,
+                radius: 300 + Math.random() * 400
+            }).addTo(map);
+            
+            circle.bindPopup(`
+                <strong>Vulnerability Score: ${risk.toFixed(1)}</strong><br>
+                Population at risk: ${Math.floor(Math.random() * 500 + 100)}<br>
+                Elderly residents: ${Math.floor(Math.random() * 100)}<br>
+                Without AC: ${Math.floor(Math.random() * 50)}%
+            `);
+            
+            vulnerableAreas.push({circle, risk, lat, lng});
+        }
+        
+        // Active interventions
+        const activeInterventions = new Set();
+        
+        function toggleIntervention(type) {
+            const btn = event.target;
+            if (activeInterventions.has(type)) {
+                activeInterventions.delete(type);
+                btn.classList.remove('active');
+            } else {
+                activeInterventions.add(type);
+                btn.classList.add('active');
+            }
+            updateImpactProjection();
+        }
+        
+        function updateImpactProjection() {
+            let deathsPrevented = 0;
+            let totalCost = 0;
+            
+            if (activeInterventions.has('trees')) {
+                deathsPrevented += 3;
+                totalCost += 500000;
+            }
+            if (activeInterventions.has('cooling')) {
+                deathsPrevented += 5;
+                totalCost += 500000;
+            }
+            if (activeInterventions.has('transit')) {
+                deathsPrevented += 2;
+                totalCost += 300000;
+            }
+            if (activeInterventions.has('roofs')) {
+                deathsPrevented += 4;
+                totalCost += 800000;
+            }
+            
+            document.getElementById('deaths-prevented').textContent = deathsPrevented;
+            document.getElementById('cost-per-life').textContent = deathsPrevented > 0 
+                ? '$' + (totalCost / deathsPrevented).toLocaleString() 
+                : '-';
+            document.getElementById('roi').textContent = deathsPrevented > 0 
+                ? Math.floor(deathsPrevented * 2500000 / totalCost * 100) + '%' 
+                : '0%';
+            
+            // Update vulnerable population display
+            const baseVulnerable = 47832;
+            const reduction = activeInterventions.size * 3500;
+            document.getElementById('vulnerable-pop').textContent = (baseVulnerable - reduction).toLocaleString();
+        }
+        
+        // Temperature vs Deaths Chart
+        const ctx = document.getElementById('deathsChart').getContext('2d');
+        const deathsChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['85°F', '90°F', '95°F', '100°F', '105°F', '110°F', '115°F', '120°F'],
+                datasets: [{
+                    label: 'Daily Heat Deaths',
+                    data: [0, 1, 2, 5, 12, 28, 45, 62],
+                    borderColor: '#ff6b6b',
+                    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }, {
+                    label: 'With Interventions',
+                    data: [0, 0, 1, 2, 5, 12, 20, 30],
+                    borderColor: '#51b749',
+                    backgroundColor: 'rgba(81, 183, 73, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        labels: { color: '#eaeaea' }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        ticks: { color: '#eaeaea' }
+                    },
+                    x: {
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        ticks: { color: '#eaeaea' }
+                    }
+                }
+            }
+        });
+        
+        function runSimulation() {
+            alert('Running 30-day simulation...\n\nThis would connect to the backend simulation engine and show projected outcomes based on current intervention selections.');
+        }
+        
+        function exportReport() {
+            const report = {
+                date: new Date().toISOString(),
+                interventions: Array.from(activeInterventions),
+                projectedDeathsPrevented: parseInt(document.getElementById('deaths-prevented').textContent),
+                vulnerablePopulation: document.getElementById('vulnerable-pop').textContent
+            };
+            
+            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'phoenix-cse-report.json';
+            a.click();
+        }
+        
+        function resetScenario() {
+            activeInterventions.clear();
+            document.querySelectorAll('.intervention-btn').forEach(btn => btn.classList.remove('active'));
+            updateImpactProjection();
+        }
+    </script>
+</body>
+</html>
