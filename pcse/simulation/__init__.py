@@ -158,9 +158,41 @@ class InterventionScenario:
     timeline_months: int
     expected_outcomes: Dict[str, float] = field(default_factory=dict)
     
+    VALID_TYPES = {"tree_canopy", "cooling_center", "transit_cooling", "cool_roofs"}
+
     def validate(self) -> bool:
-        """Check if intervention is feasible given constraints."""
-        # TODO: Implement validation logic
+        """Check if intervention is feasible given constraints.
+
+        Validates:
+        - intervention_type is a recognized type
+        - implementation_cost is positive
+        - target_area has required geographic fields with sane values
+        - timeline_months is positive
+        """
+        if self.intervention_type not in self.VALID_TYPES:
+            return False
+
+        if self.implementation_cost <= 0:
+            return False
+
+        if self.timeline_months <= 0:
+            return False
+
+        # Validate target area geography
+        if "center_lat" in self.target_area:
+            lat = self.target_area.get("center_lat")
+            lon = self.target_area.get("center_lon")
+            radius = self.target_area.get("radius_km", 1.0)
+
+            if lat is None or lon is None:
+                return False
+            if not (-90 <= lat <= 90):
+                return False
+            if not (-180 <= lon <= 180):
+                return False
+            if radius <= 0 or radius > 50:
+                return False
+
         return True
 
 

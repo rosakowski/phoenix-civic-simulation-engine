@@ -54,7 +54,11 @@ class PhoenixDataPortal:
     async def fetch_heat_vulnerability_index(self) -> pd.DataFrame:
         """
         Fetch ASU's Heat Vulnerability Index for Phoenix census tracts.
-        
+
+        Attempts to fetch real data from the ASU EDI portal via
+        ASUDataFetcher. Falls back to synthetic data if the API
+        is unreachable.
+
         Returns DataFrame with:
         - census_tract_id
         - heat_vulnerability_score (0-100)
@@ -63,13 +67,18 @@ class PhoenixDataPortal:
         - adaptive_capacity
         - sensitivity
         """
-        # ASU CAP LTER dataset
-        url = "https://sustainability-innovation.asu.edu/caplter/data/view/knb-lter-cap.665.2/"
-        
+        from .data_fetcher import ASUDataFetcher
+
         logger.info("Fetching Heat Vulnerability Index from ASU...")
-        
-        # TODO: Implement actual data fetching
-        # For MVP, we'll create synthetic but realistic data structure
+
+        fetcher = ASUDataFetcher()
+        real_data = await fetcher.fetch_heat_vulnerability()
+
+        if real_data is not None:
+            logger.info("Using real ASU HVI data")
+            return real_data
+
+        logger.info("Falling back to synthetic HVI data")
         return self._generate_synthetic_hvi()
     
     async def fetch_transit_heat_relief(self) -> pd.DataFrame:
