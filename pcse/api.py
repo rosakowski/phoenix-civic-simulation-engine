@@ -87,7 +87,7 @@ async def health_check():
 @app.get("/dashboard", response_class=HTMLResponse)
 async def serve_dashboard():
     """Serve the interactive dashboard."""
-    dashboard_path = Path(__file__).parent / "dashboard.html"
+    dashboard_path = Path(__file__).parent / "interface" / "dashboard.html"
     if dashboard_path.exists():
         return HTMLResponse(content=dashboard_path.read_text())
     raise HTTPException(status_code=404, detail="Dashboard not found")
